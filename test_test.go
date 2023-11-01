@@ -4,6 +4,7 @@ import (
 	"context"
 	"cosmossdk.io/math"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/strangelove-ventures/interchaintest/v8"
@@ -21,12 +22,28 @@ func TestLearn(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 	ctx := context.Background()
-
+	numFullNodes := 0
+	numValidators := 1
 	t.Parallel()
+	stakingAmount, _ := math.NewIntFromString("500000000000000000000000")
+	genesisbalance, _ := math.NewIntFromString("1000000000000000000000000")
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		{Name: "gaia", Version: "v7.0.0", ChainConfig: ibc.ChainConfig{
-			GasPrices: "0.0uatom",
-		}},
+		{Name: "dymension", Version: "latest", NumFullNodes: &numFullNodes, NumValidators: &numValidators,
+			ChainConfig: ibc.ChainConfig{
+				Type:           "cosmos",
+				ChainID:        "dymension_100-1",
+				Images:         []ibc.DockerImage{{Repository: "dymension", UidGid: "1025:1025"}},
+				Bin:            "dymd",
+				Bech32Prefix:   "dym",
+				Denom:          "udym",
+				GasPrices:      "0udym",
+				GasAdjustment:  0,
+				TrustingPeriod: "168h0m0s",
+				ModifyGenesisAmounts: func() (sdk.Coin, sdk.Coin) {
+					return sdk.NewCoin("udym", genesisbalance),
+						sdk.NewCoin("udym", stakingAmount)
+				},
+			}},
 		{Name: "osmosis", Version: "v11.0.0"},
 	})
 	chains, err := cf.Chains(t.Name())
