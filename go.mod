@@ -1,6 +1,6 @@
 module dymension_interchaintest
 
-go 1.19
+go 1.20
 
 require (
 	github.com/strangelove-ventures/interchaintest/v7 v7.0.0-20230905210439-3e17efc70581
