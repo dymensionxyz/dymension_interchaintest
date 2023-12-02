@@ -2,20 +2,32 @@ package dymension_interchaintest
 
 import (
 	"context"
-	"cosmossdk.io/math"
 	"fmt"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	"github.com/strangelove-ventures/interchaintest/v8"
-	"github.com/strangelove-ventures/interchaintest/v8/chain/cosmos"
-	"github.com/strangelove-ventures/interchaintest/v8/ibc"
-	"github.com/strangelove-ventures/interchaintest/v8/testreporter"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
+
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	testutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	"github.com/strangelove-ventures/interchaintest/v7"
+	"github.com/strangelove-ventures/interchaintest/v7/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v7/ibc"
+	"github.com/strangelove-ventures/interchaintest/v7/testreporter"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+
+	ethermint "github.com/evmos/ethermint/types"
 )
+
+func evmConfig() *testutil.TestEncodingConfig {
+	cfg := cosmos.DefaultEncoding()
+
+	ethermint.RegisterInterfaces(cfg.InterfaceRegistry)
+
+	return &cfg
+}
 
 func TestLearn(t *testing.T) {
 	if testing.Short() {
@@ -37,6 +49,7 @@ func TestLearn(t *testing.T) {
 				Bech32Prefix:   "dym",
 				Denom:          "udym",
 				GasPrices:      "0udym",
+				EncodingConfig: evmConfig(),
 				GasAdjustment:  0,
 				TrustingPeriod: "168h0m0s",
 				ModifyGenesisAmounts: func() (sdk.Coin, sdk.Coin) {
