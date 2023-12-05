@@ -7,21 +7,21 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/strangelove-ventures/interchaintest/v7"
-	"github.com/strangelove-ventures/interchaintest/v7/chain/cosmos"
-	"github.com/strangelove-ventures/interchaintest/v7/ibc"
-	"github.com/strangelove-ventures/interchaintest/v7/testreporter"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	"github.com/strangelove-ventures/interchaintest/v6"
+	"github.com/strangelove-ventures/interchaintest/v6/chain/cosmos"
+	"github.com/strangelove-ventures/interchaintest/v6/ibc"
+	"github.com/strangelove-ventures/interchaintest/v6/testreporter"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
 	ethermint "github.com/evmos/ethermint/types"
 )
 
-func evmConfig() *testutil.TestEncodingConfig {
+func evmConfig() *simappparams.EncodingConfig {
 	cfg := cosmos.DefaultEncoding()
 
 	ethermint.RegisterInterfaces(cfg.InterfaceRegistry)
