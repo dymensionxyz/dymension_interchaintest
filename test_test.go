@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 
+	ethermintcrypto "github.com/evmos/ethermint/crypto/codec"
 	ethermint "github.com/evmos/ethermint/types"
 )
 
@@ -26,6 +27,7 @@ func evmConfig() *simappparams.EncodingConfig {
 	cfg := cosmos.DefaultEncoding()
 
 	ethermint.RegisterInterfaces(cfg.InterfaceRegistry)
+	ethermintcrypto.RegisterInterfaces(cfg.InterfaceRegistry)
 
 	return &cfg
 }
@@ -51,14 +53,14 @@ func TestLearn(t *testing.T) {
 				Denom:          "udym",
 				GasPrices:      "0udym",
 				EncodingConfig: evmConfig(),
-				GasAdjustment:  0,
+				GasAdjustment:  1.5,
 				TrustingPeriod: "168h0m0s",
 				ModifyGenesisAmounts: func() (sdk.Coin, sdk.Coin) {
 					return sdk.NewCoin("udym", genesisbalance),
 						sdk.NewCoin("udym", stakingAmount)
 				},
 			}},
-		{Name: "osmosis", Version: "v11.0.0"},
+		{Name: "osmosis", Version: "v11.0.0", NumFullNodes: &numFullNodes, NumValidators: &numValidators},
 	})
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
@@ -68,7 +70,9 @@ func TestLearn(t *testing.T) {
 	// TODO: Enabled ExtraCodecs in the relayer here ([]string{"ethermint"})
 	// https://github.com/cosmos/relayer/blob/7f03bc726608a044d59cbf5e3e560f7ee99051fa/cregistry/chain_info.go#L88
 	r := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
-		interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.1.2", "100:1000"),
+		// interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.1.2", "100:1000"),
+		interchaintestrelayer.CustomDockerImage("relayer", "v2.5.0", "100:1000"), // Custom build with forced eth flag
+		interchaintestrelayer.ImagePull(false),                                   // Custom build with forced eth flag
 		interchaintestrelayer.StartupFlags("--processor", "events", "--block-history", "100"),
 	).Build(t, client, network)
 
