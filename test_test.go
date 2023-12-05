@@ -14,6 +14,7 @@ import (
 	"github.com/strangelove-ventures/interchaintest/v6"
 	"github.com/strangelove-ventures/interchaintest/v6/chain/cosmos"
 	"github.com/strangelove-ventures/interchaintest/v6/ibc"
+	interchaintestrelayer "github.com/strangelove-ventures/interchaintest/v6/relayer"
 	"github.com/strangelove-ventures/interchaintest/v6/testreporter"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -61,21 +62,25 @@ func TestLearn(t *testing.T) {
 	})
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
-	gaia, osmosis := chains[0], chains[1]
+	dymension, osmosis := chains[0], chains[1]
 	client, network := interchaintest.DockerSetup(t)
-	r := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t)).Build(
-		t, client, network)
-	const ibcPath = "gaia-osmo-demo"
+	r := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
+		interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.2.0", "100:1000"),
+		interchaintestrelayer.StartupFlags("--processor", "events", "--block-history", "100"),
+	).Build(t, client, network)
+
+	const ibcPath = "dymension-osmo-demo"
 	ic := interchaintest.NewInterchain().
-		AddChain(gaia).
+		AddChain(dymension).
 		AddChain(osmosis).
 		AddRelayer(r, "relayer").
 		AddLink(interchaintest.InterchainLink{
-			Chain1:  gaia,
+			Chain1:  dymension,
 			Chain2:  osmosis,
 			Relayer: r,
 			Path:    ibcPath,
 		})
+
 	// Log location
 	f, err := interchaintest.CreateLogFile(fmt.Sprintf("%d.json", time.Now().Unix()))
 	require.NoError(t, err)
@@ -96,16 +101,16 @@ func TestLearn(t *testing.T) {
 
 	// Create and Fund User Wallets
 	fundAmount := math.NewInt(10_000_000)
-	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", fundAmount, gaia, osmosis)
+	users := interchaintest.GetAndFundTestUsers(t, ctx, "default", fundAmount, dymension, osmosis)
 	gaiaUser := users[0]
 	osmosisUser := users[1]
 
-	gaiaUserBalInitial, err := gaia.GetBalance(ctx, gaiaUser.FormattedAddress(), gaia.Config().Denom)
+	gaiaUserBalInitial, err := dymension.GetBalance(ctx, gaiaUser.FormattedAddress(), dymension.Config().Denom)
 	require.NoError(t, err)
 	require.True(t, gaiaUserBalInitial.Equal(fundAmount))
 
 	// Get Channel ID
-	gaiaChannelInfo, err := r.GetChannels(ctx, eRep, gaia.Config().ChainID)
+	gaiaChannelInfo, err := r.GetChannels(ctx, eRep, dymension.Config().ChainID)
 	require.NoError(t, err)
 	gaiaChannelID := gaiaChannelInfo[0].ChannelID
 
@@ -121,10 +126,10 @@ func TestLearn(t *testing.T) {
 	dstAddress := osmosisUser.FormattedAddress()
 	transfer := ibc.WalletAmount{
 		Address: dstAddress,
-		Denom:   gaia.Config().Denom,
+		Denom:   dymension.Config().Denom,
 		Amount:  amountToSend,
 	}
-	tx, err := gaia.SendIBCTransfer(ctx, gaiaChannelID, gaiaUser.KeyName(), transfer, ibc.TransferOptions{})
+	tx, err := dymension.SendIBCTransfer(ctx, gaiaChannelID, gaiaUser.KeyName(), transfer, ibc.TransferOptions{})
 	require.NoError(t, err)
 	require.NoError(t, tx.Validate())
 
@@ -133,12 +138,12 @@ func TestLearn(t *testing.T) {
 
 	// test source wallet has decreased funds
 	expectedBal := gaiaUserBalInitial.Sub(amountToSend)
-	gaiaUserBalNew, err := gaia.GetBalance(ctx, gaiaUser.FormattedAddress(), gaia.Config().Denom)
+	gaiaUserBalNew, err := dymension.GetBalance(ctx, gaiaUser.FormattedAddress(), dymension.Config().Denom)
 	require.NoError(t, err)
 	require.True(t, gaiaUserBalNew.Equal(expectedBal))
 
 	// Trace IBC Denom
-	srcDenomTrace := transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom("transfer", osmoChannelID, gaia.Config().Denom))
+	srcDenomTrace := transfertypes.ParseDenomTrace(transfertypes.GetPrefixedDenom("transfer", osmoChannelID, dymension.Config().Denom))
 	dstIbcDenom := srcDenomTrace.IBCDenom()
 
 	// Test destination wallet has increased funds
