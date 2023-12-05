@@ -64,8 +64,11 @@ func TestLearn(t *testing.T) {
 	require.NoError(t, err)
 	dymension, osmosis := chains[0], chains[1]
 	client, network := interchaintest.DockerSetup(t)
+
+	// TODO: Enabled ExtraCodecs in the relayer here ([]string{"ethermint"})
+	// https://github.com/cosmos/relayer/blob/7f03bc726608a044d59cbf5e3e560f7ee99051fa/cregistry/chain_info.go#L88
 	r := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
-		interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.2.0", "100:1000"),
+		interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.1.2", "100:1000"),
 		interchaintestrelayer.StartupFlags("--processor", "events", "--block-history", "100"),
 	).Build(t, client, network)
 
