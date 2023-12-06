@@ -32,7 +32,7 @@ func evmConfig() *simappparams.EncodingConfig {
 	return &cfg
 }
 
-func TestLearn(t *testing.T) {
+func TestDymensionIBC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in short mode")
 	}
@@ -67,12 +67,9 @@ func TestLearn(t *testing.T) {
 	dymension, osmosis := chains[0], chains[1]
 	client, network := interchaintest.DockerSetup(t)
 
-	// TODO: Enabled ExtraCodecs in the relayer here ([]string{"ethermint"})
-	// https://github.com/cosmos/relayer/blob/7f03bc726608a044d59cbf5e3e560f7ee99051fa/cregistry/chain_info.go#L88
 	r := interchaintest.NewBuiltinRelayerFactory(ibc.CosmosRly, zaptest.NewLogger(t),
-		// interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "v2.1.2", "100:1000"),
-		interchaintestrelayer.CustomDockerImage("relayer", "v2.5.0", "100:1000"), // Custom build with forced eth flag
-		interchaintestrelayer.ImagePull(false),                                   // Custom build with forced eth flag
+		// https://github.com/cosmos/relayer/commit/d3c1724def2a174e417139108ff2d6f5d0c81412
+		interchaintestrelayer.CustomDockerImage("ghcr.io/cosmos/relayer", "reece-v2.3.1-ethermint", "100:1000"),
 		interchaintestrelayer.StartupFlags("--processor", "events", "--block-history", "100"),
 	).Build(t, client, network)
 
@@ -101,7 +98,6 @@ func TestLearn(t *testing.T) {
 		Client:    client,
 		NetworkID: network,
 		// BlockDatabaseFile: interchaintest.DefaultBlockDatabaseFilepath(),
-
 		SkipPathCreation: false},
 	),
 	)
